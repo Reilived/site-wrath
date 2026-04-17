@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wrath</title>
+  <link rel="icon" type="image/png" href="/assets/icon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <header class="topbar">
+    <div class="brand" onclick="showPage('home')">
+      <img class="brand-icon" src="/assets/icon.png" alt="icon" />
+      <span class="brand-name">Wrath</span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" onclick="showPage('home')">Home</button>
+      <button class="nav-item" onclick="showPage('leaderboard')">Leaderboard</button>
+      <button class="nav-item" onclick="showPage('status')">Status</button>
+      <button class="nav-item" onclick="showPage('staff')">Staff</button>
+      <button class="nav-item" onclick="showPage('support')">Support</button>
+    </nav>
+
+    <div class="account-actions">
+      <div class="search-box">
+        <input type="text" id="playerSearch" placeholder="Search for a player" />
+        <button id="searchBtn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="header-right" style="display:flex; align-items:center;">
+        <div class="ip-box" id="copyIpBtn" style="cursor:pointer; background:rgba(0,0,0,0.3); border:2px solid var(--primary); padding:8px 16px; border-radius:12px; display:flex; flex-direction:column; align-items:center; margin-right:20px; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(var(--primary-rgb), 0.3)'; this.style.background='rgba(var(--primary-rgb), 0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'; this.style.background='rgba(0,0,0,0.3)'">
+          <span style="font-size:14px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">WRATHPVP.PRO</span>
+          <span style="font-size:11px; font-weight:700; color:var(--primary); line-height:1; margin-top:2px;">PORT: 19132</span>
+        </div>
+        <div id="accountContainer" class="account-dropdown-container">
+          <div class="account-btn" id="loginBtn">
+            <div class="account-text">
+              <span class="account-sub" id="accountSub">Currently not logged in</span>
+              <span class="account-main" id="accountMain">Log in</span>
+            </div>
+            <div class="account-avatar" id="accountAvatar"></div>
+          </div>
+          <div class="account-dropdown" id="accountDropdown">
+            <button onclick="showMyProfile(); event.stopPropagation();">👤 Profile</button>
+            <button onclick="showMyMatchHistory(); event.stopPropagation();">🎮 Match History</button>
+            <button class="logout-btn" onclick="handleLogout(); event.stopPropagation();">🚪 Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="bg" id="globalBg"></div>
+
+  <main class="content">
+    <div id="homePage" class="page active">
+      <div class="home-hero-container">
+        <div class="hero home-hero">
+          <h1>Wrath Practice</h1>
+          <p>Use <code>/sitelink</code> in-game to link your profile.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="leaderboardPage" class="page">
+      <div class="hero" style="margin-bottom:30px">
+        <h1>Leaderboards</h1>
+        <p>Top players across all ladders.</p>
+      </div>
+      <div class="leaderboard-grid" id="lbGrid">
+        <!-- Leaderboards injected here -->
+      </div>
+    </div>
+
+    <div id="staffPage" class="page">
+      <div class="hero" style="margin-bottom:30px">
+        <h1>Staff Team</h1>
+        <p>The dedicated team behind Wrath Practice.</p>
+      </div>
+      <div id="staffContent" class="staff-container">
+        <!-- Staff categorized by rank groups injected here -->
+        <div class="staff-loading">Loading staff team...</div>
+      </div>
+    </div>
+
+    <div id="supportPage" class="page">
+      <div class="hero">
+        <h1>Support</h1>
+        <p>Need help? Join our community.</p>
+        <div style="margin-top:40px">
+          <a href="https://discord.gg/ZTZVF4v2kN" target="_blank" class="support-card">
+            <svg class="discord-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.074 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.086 2.157 2.419c0 1.334-.966 2.419-2.156 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.086 2.157 2.419c0 1.334-.946 2.419-2.157 2.419z"/>
+            </svg>
+            <span>Join the discord for support.</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div id="statusPage" class="page">
+      <div class="hero" style="margin-bottom:30px">
+        <h1>Server Status</h1>
+        <p>Live metrics from our network.</p>
+      </div>
+      
+      <div class="status-grid">
+        <!-- Practice Server Card -->
+        <div class="status-card">
+          <div class="status-card-header">
+            <div class="status-dot online" id="practiceDot"></div>
+            <h2 class="status-card-title">Practice Server</h2>
+          </div>
+          <div class="metrics-grid">
+            <div class="status-metric">
+              <span class="label">Online</span>
+              <span class="value" id="practiceOnline">0/0</span>
+            </div>
+            <div class="status-metric">
+              <span class="label">TPS</span>
+              <span class="value" id="practiceTPS">0.00</span>
+            </div>
+            <div class="status-metric">
+              <span class="label">Load</span>
+              <span class="value" id="practiceLoad">0%</span>
+            </div>
+          </div>
+          <div class="player-list-container">
+            <h3>Online Players</h3>
+            <div id="practicePlayers" class="player-list-scroll">
+              <!-- Players injected here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Hub Server Card -->
+        <div class="status-card">
+          <div class="status-card-header">
+            <div class="status-dot online" id="hubDot"></div>
+            <h2 class="status-card-title">Hub Server</h2>
+          </div>
+          <div class="metrics-grid">
+            <div class="status-metric">
+              <span class="label">Online</span>
+              <span class="value" id="hubOnline">0/0</span>
+            </div>
+            <div class="status-metric">
+              <span class="label">Status</span>
+              <span class="value" id="hubState">Online</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="profilePage" class="page">
+      <div class="hero" style="margin-bottom:30px">
+        <h1>Player Profile</h1>
+        <p id="profileHeader">Viewing profile</p>
+      </div>
+      <div id="profileContent" class="profile-container">
+        <!-- Profile details injected here -->
+        <div class="profile-loading">Loading profile...</div>
+      </div>
+    </div>
+
+    <div id="historyPage" class="page">
+      <div class="hero" style="margin-bottom:20px">
+        <h1>Match History</h1>
+        <p id="historyHeader">Viewing match history</p>
+      </div>
+      <div class="history-toolbar">
+        <div class="history-toggle" role="tablist">
+          <button class="history-tab active" id="historyRankedTab">Ranked</button>
+          <button class="history-tab" id="historyUnrankedTab">Unranked</button>
+        </div>
+      </div>
+      <div id="historyContent" class="history-container">
+        <div class="history-loading">Loading match history...</div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal" id="loginModal" aria-hidden="true">
+    <div class="modal-inner">
+      <div class="modal-title">Log in</div>
+      <div class="modal-desc">Enter the code you got from <code>/sitelink</code>.</div>
+      <input class="input" id="codeInput" placeholder="XXXXXXXX" maxlength="8" />
+      <div class="row">
+        <button class="btn" id="submitCode">Link</button>
+        <button class="btn btn-ghost" id="closeLogin">Cancel</button>
+      </div>
+      <div class="error" id="loginError"></div>
+    </div>
+  </div>
+
+  <div class="drawer" id="statusDrawer" aria-hidden="true">
+    <div class="drawer-inner">
+      <div class="drawer-head">
+        <div class="drawer-title">Status</div>
+        <button class="btn btn-ghost" id="closeStatus">Close</button>
+      </div>
+      <div class="metrics" id="metrics"></div>
+      <div class="player-list" id="playerList"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="searchActionModal" aria-hidden="true">
+    <div class="modal-inner">
+      <div class="modal-title">Open Player</div>
+      <div class="modal-desc" id="searchActionDesc">Choose what you want to view.</div>
+      <div class="row" style="gap:10px; flex-wrap: wrap;">
+        <button class="btn" id="searchGoProfile">Profile</button>
+        <button class="btn btn-ghost" id="searchGoHistory">Match History</button>
+        <button class="btn btn-ghost" id="searchCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="copyModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content" style="max-width: 400px; text-align: center; padding: 40px; border: 2px solid var(--primary); box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.2);">
+      <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
+      <h2 style="margin-bottom: 15px; font-size: 24px; font-weight: 900; color: #fff;">Success!</h2>
+      <p style="color: var(--muted); margin-bottom: 30px; font-size: 16px; line-height: 1.5;">You have successfully copied the IP/Port to clipboard.</p>
+      <button id="closeCopyModal" class="nav-item active" style="width: 100%; justify-content: center; padding: 14px; cursor: pointer; background: var(--primary); border: none; border-radius: 10px; color: #000; font-weight: 900; font-size: 16px; transition: transform 0.2s; display: flex; align-items: center; position: relative; z-index: 10001;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">OK</button>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
