@@ -958,32 +958,29 @@ async function renderProfile(name){
   container.innerHTML = '<div class="profile-loading">Loading profile for ' + escapeHtml(name) + '...</div>';
   header.innerText = 'Viewing profile of ' + name;
 
-  // new thingy logic stuff ye 
+  // New Tab Navigation logic
   const setupTabs = () => {
     const navStats = document.getElementById('profileNavStats');
     const navHistory = document.getElementById('profileNavHistory');
     const navPunishments = document.getElementById('profileNavPunishments');
     
     const contentStats = document.getElementById('profileStatsContent');
-    const contentHistory = document.getElementById('profileHistoryContent');
     const contentPunishments = document.getElementById('profilePunishmentsContent');
 
     if (navStats) navStats.onclick = () => {
       [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
       navStats.classList.add('active');
-      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
       if(contentStats) contentStats.style.display = 'block';
+      if(contentPunishments) contentPunishments.style.display = 'none';
     };
     if (navHistory) navHistory.onclick = () => {
-      [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
-      navHistory.classList.add('active');
-      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
-      if(contentHistory) contentHistory.style.display = 'block';
+      // Simply go to the match history page for this player
+      showMatchHistory(name);
     };
     if (navPunishments) navPunishments.onclick = () => {
       [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
       navPunishments.classList.add('active');
-      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
+      if(contentStats) contentStats.style.display = 'none';
       if(contentPunishments) contentPunishments.style.display = 'block';
       loadPunishments(name);
     };
@@ -1004,9 +1001,11 @@ async function renderProfile(name){
         <div class="profile-top">
           <div class="profile-head" id="profileHeadContainer"></div>
           <div class="profile-info">
-            <div class="profile-name" style="color:${profile.rankColor || '#fff'}">${escapeHtml(profile.name)}</div>
+            <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+              <div class="profile-name" style="color:${profile.rankColor || '#fff'}">${escapeHtml(profile.name)}</div>
+              <div id="profileBanStatus" style="font-weight:900; font-size:15px;"></div>
+            </div>
             <div class="profile-rank">${escapeHtml(profile.rankName || 'Player')}</div>
-            <div id="profileBanStatus" style="font-weight:800; font-size:14px; margin-top:5px;"></div>
             <div class="profile-badges">
               ${profile.tag ? `<div class="profile-badge" style="background:rgba(239,68,68,0.1);color:#ef4444">${escapeHtml(profile.tag)}</div>` : ''}
               ${profile.division ? `<div class="profile-badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${escapeHtml(profile.division)}</div>` : ''}
@@ -1137,8 +1136,11 @@ async function loadPunishments(name, render = true) {
   if (render && listEl) listEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:18px;font-weight:700">Fetching punishments...</div>';
   
   try {
-    const data = await api('/api/punishments/' + encodeURIComponent(name));
-    if (!data || !data.success) return;
+    const data = await api('/api/punishments/' + encodeURIComponent(name), { timeoutMs: 15000 });
+    if (!data || !data.success) {
+      if (render && listEl) listEl.innerHTML = '<div style="color:var(--red);text-align:center;padding:18px;font-weight:800">Failed to load punishments.</div>';
+      return;
+    }
 
     currentProfilePunishments = data.punishments || [];
     currentProfileAlts = data.alts || [];
@@ -1146,10 +1148,10 @@ async function loadPunishments(name, render = true) {
     if (statusEl) {
       if (data.banned) {
         statusEl.style.color = '#ef4444';
-        statusEl.textContent = 'This player is currently banned.';
+        statusEl.textContent = 'Player is currently banned.';
       } else {
         statusEl.style.color = '#22c55e';
-        statusEl.textContent = 'This player is not currently banned.';
+        statusEl.textContent = 'Player is not currently banned.';
       }
     }
 
