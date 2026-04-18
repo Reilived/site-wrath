@@ -1158,9 +1158,12 @@ async function loadPunishments(name, render = true) {
       if (data.banned) {
         statusEl.style.color = '#ef4444';
         statusEl.textContent = 'This player is currently banned.';
+      } else if (data.muted) {
+        statusEl.style.color = '#eab308';
+        statusEl.textContent = 'This player is currently muted.';
       } else {
         statusEl.style.color = '#22c55e';
-        statusEl.textContent = 'This player is not currently banned.';
+        statusEl.textContent = 'This player has no active punishments.';
       }
     }
 
