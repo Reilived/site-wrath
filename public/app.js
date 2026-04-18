@@ -440,7 +440,7 @@ let pendingPurchase = null;
 
 const storeItems = {
   ranks: [
-    { id: 'wrath_plus', name: 'Wrath Plus', price: '£9.99', img: 'assets/Wrath.png' }
+    { id: 'wrath_plus', name: 'Wrath Plus', price: '£9.99', img: 'assets/wrath.png' }
   ],
   punishments: [
     { id: 'unban_1', name: '1st Unban', price: '£11.99', img: 'assets/punishment.png' },
