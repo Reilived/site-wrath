@@ -49,9 +49,23 @@
             <div class="account-avatar" id="accountAvatar"></div>
           </div>
           <div class="account-dropdown" id="accountDropdown">
-            <button onclick="showMyProfile(); event.stopPropagation();">👤 Profile</button>
-            <button onclick="showMyMatchHistory(); event.stopPropagation();">🎮 Match History</button>
-            <button class="logout-btn" onclick="handleLogout(); event.stopPropagation();">🚪 Log out</button>
+            <button onclick="showMyProfile(); event.stopPropagation();">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:8px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              Profile
+            </button>
+            <button onclick="showMyStats(); event.stopPropagation();">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:8px;"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
+              Stats
+            </button>
+            <button onclick="showMyMatchHistory(); event.stopPropagation();">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:8px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              Match History
+            </button>
+            <div style="height:1px; background:rgba(255,255,255,0.06); margin:4px 0;"></div>
+            <button class="logout-btn" onclick="handleLogout(); event.stopPropagation();">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:8px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              Log out
+            </button>
           </div>
         </div>
       </div>

@@ -86,11 +86,143 @@ const historyHeader = document.getElementById('historyHeader');
 const historyContent = document.getElementById('historyContent');
 const historyRankedTab = document.getElementById('historyRankedTab');
 const historyUnrankedTab = document.getElementById('historyUnrankedTab');
+const historyPagination = document.getElementById('historyPagination');
+
+const historyList = document.getElementById('historyList');
 
 let lastSearchName = '';
 let historyMode = 'ranked';
 let historyPage = 1;
 const matchesPerPage = 10;
+
+if (closeCopyModal) {
+  closeCopyModal.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (copyModal) close(copyModal);
+  });
+}
+
+if (copyIpBtn) {
+  copyIpBtn.addEventListener('click', () => {
+    const text = "Wrathpvp.pro:19132";
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (copyModal) open(copyModal);
+      }).catch(err => {
+        fallbackCopyText(text);
+      });
+    } else {
+      fallbackCopyText(text);
+    }
+  });
+}
+
+function fallbackCopyText(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  textArea.style.top = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    const successful = document.execCommand('copy');
+    if (copyModal) open(copyModal);
+  } catch (err) {
+  }
+  document.body.removeChild(textArea);
+}
+
+if (historyRankedTab) {
+  historyRankedTab.addEventListener('click', () => {
+    setHistoryTab('ranked');
+    refreshMatchHistory();
+  });
+}
+if (historyUnrankedTab) {
+  historyUnrankedTab.addEventListener('click', () => {
+    setHistoryTab('unranked');
+    refreshMatchHistory();
+  });
+}
+
+function setHistoryTab(mode) {
+  historyMode = mode;
+  historyPage = 1;
+  const ranked = document.getElementById('historyRankedTab');
+  const unranked = document.getElementById('historyUnrankedTab');
+  if (ranked) ranked.classList.toggle('active', mode === 'ranked');
+  if (unranked) unranked.classList.toggle('active', mode === 'unranked');
+}
+
+async function refreshMatchHistory() {
+  const list = document.getElementById('historyList');
+  const pag = document.getElementById('historyPagination');
+  if (!list) return;
+
+  list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px;font-weight:700">Loading matches...</div>';
+  if (pag) pag.innerHTML = '';
+
+  try {
+    const data = await api(`/api/matches/${encodeURIComponent(lastSearchName)}?mode=${historyMode}&page=${historyPage}&limit=${matchesPerPage}`);
+    if (!data || !data.success) {
+      list.innerHTML = '<div style="color:var(--red);text-align:center;padding:40px;font-weight:800">Failed to load match history.</div>';
+      return;
+    }
+
+    const matches = data.matches || [];
+    if (matches.length === 0) {
+      list.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px;font-weight:800">No ${historyMode} matches found for this player.</div>`;
+      return;
+    }
+
+    list.innerHTML = matches.map(m => {
+      const isWinner = m.winner.toLowerCase() === lastSearchName.toLowerCase();
+      const date = new Date(m.time * 1000).toLocaleDateString();
+      const timeStr = new Date(m.time * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <div class="history-item ${isWinner ? 'win' : 'loss'}">
+          <div class="history-left">
+            <div class="history-status">${isWinner ? 'WIN' : 'LOSS'}</div>
+            <div class="history-info">
+              <div class="history-kit">${escapeHtml(m.kit)}</div>
+              <div class="history-date">${date} at ${timeStr}</div>
+            </div>
+          </div>
+          <div class="history-players">
+            <span class="player" onclick="renderProfile('${escapeHtml(m.loser)}'); showPage('profile');">${escapeHtml(m.loser)}</span>
+            <span class="vs">vs</span>
+            <span class="player" onclick="renderProfile('${escapeHtml(m.winner)}'); showPage('profile');">${escapeHtml(m.winner)}</span>
+          </div>
+          <div class="history-elo ${m.eloChange >= 0 ? 'plus' : 'minus'}">
+            ${m.eloChange >= 0 ? '+' : ''}${m.eloChange}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (pag) {
+      const hasMore = matches.length === matchesPerPage;
+      pag.innerHTML = `
+        <button class="btn btn-ghost" ${historyPage <= 1 ? 'disabled' : ''} id="prevPage">Previous</button>
+        <span style="font-weight:800; color:var(--muted)">Page ${historyPage}</span>
+        <button class="btn btn-ghost" ${!hasMore ? 'disabled' : ''} id="nextPage">Next</button>
+      `;
+
+      const prev = document.getElementById('prevPage');
+      const next = document.getElementById('nextPage');
+      if (prev) prev.onclick = () => { if(historyPage > 1) { historyPage--; refreshMatchHistory(); } };
+      if (next) next.onclick = () => { if(hasMore) { historyPage++; refreshMatchHistory(); } };
+    }
+
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--red);text-align:center;padding:40px;font-weight:800">Error loading match history.</div>';
+  }
+}
 
 if (playerSearch) {
   playerSearch.addEventListener('keypress', (e) => {
@@ -107,12 +239,6 @@ if (searchBtn) {
 
 function open(el){ el.setAttribute('aria-hidden','false'); }
 function close(el){ el.setAttribute('aria-hidden','true'); }
-
-function setHistoryTab(mode){
-  historyMode = mode;
-  if(historyRankedTab) historyRankedTab.classList.toggle('active', mode === 'ranked');
-  if(historyUnrankedTab) historyUnrankedTab.classList.toggle('active', mode === 'unranked');
-}
 
 function timeAgo(ts){
   if(!ts) return '';
@@ -229,8 +355,6 @@ async function refreshMatchHistory(){
 function showMatchHistory(name){
   lastSearchName = name;
   historyPage = 1;
-  if(historyHeader) historyHeader.textContent = `Viewing match history for ${name}`;
-  setHistoryTab(historyMode || 'ranked');
   showPage('history');
   refreshMatchHistory();
 }
@@ -655,6 +779,12 @@ function showMyProfile() {
 function showMyMatchHistory() {
   if (currentUser && currentUser.player) {
     showMatchHistory(currentUser.player);
+  }
+}
+
+function showMyStats() {
+  if (currentUser && currentUser.player) {
+    openPlayerStats(currentUser.player, 'NoDebuff');
   }
 }
 
@@ -1221,12 +1351,18 @@ function openPunishmentDetail(id) {
 }
 
 const punishmentModalCloseBtn = document.getElementById('punishmentModalClose');
-if (punishmentModalCloseBtn) {
-  punishmentModalCloseBtn.onclick = () => close(document.getElementById('punishmentModal'));
-}
 const punishmentModalEl = document.getElementById('punishmentModal');
-if (punishmentModalEl) {
-  punishmentModalEl.addEventListener('click', (e) => { if(e.target === punishmentModalEl) close(punishmentModalEl); });
+if (punishmentModalCloseBtn && punishmentModalEl) {
+  punishmentModalCloseBtn.onclick = () => close(punishmentModalEl);
+  punishmentModalEl.addEventListener('click', (e) => { 
+    if(e.target === punishmentModalEl) close(punishmentModalEl); 
+  });
+}
+
+function showMyStats() {
+  if (currentUser && currentUser.player) {
+    openPlayerStats(currentUser.player, 'NoDebuff');
+  }
 }
 
 function makeBodyCanvas(skinBase64) {
