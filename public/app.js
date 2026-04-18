@@ -86,143 +86,11 @@ const historyHeader = document.getElementById('historyHeader');
 const historyContent = document.getElementById('historyContent');
 const historyRankedTab = document.getElementById('historyRankedTab');
 const historyUnrankedTab = document.getElementById('historyUnrankedTab');
-const historyPagination = document.getElementById('historyPagination');
-
-const historyList = document.getElementById('historyList');
 
 let lastSearchName = '';
 let historyMode = 'ranked';
 let historyPage = 1;
 const matchesPerPage = 10;
-
-if (closeCopyModal) {
-  closeCopyModal.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (copyModal) close(copyModal);
-  });
-}
-
-if (copyIpBtn) {
-  copyIpBtn.addEventListener('click', () => {
-    const text = "Wrathpvp.pro:19132";
-    
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        if (copyModal) open(copyModal);
-      }).catch(err => {
-        fallbackCopyText(text);
-      });
-    } else {
-      fallbackCopyText(text);
-    }
-  });
-}
-
-function fallbackCopyText(text) {
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-  textArea.style.position = "fixed";
-  textArea.style.left = "-9999px";
-  textArea.style.top = "0";
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-  try {
-    const successful = document.execCommand('copy');
-    if (copyModal) open(copyModal);
-  } catch (err) {
-  }
-  document.body.removeChild(textArea);
-}
-
-if (historyRankedTab) {
-  historyRankedTab.addEventListener('click', () => {
-    setHistoryTab('ranked');
-    refreshMatchHistory();
-  });
-}
-if (historyUnrankedTab) {
-  historyUnrankedTab.addEventListener('click', () => {
-    setHistoryTab('unranked');
-    refreshMatchHistory();
-  });
-}
-
-function setHistoryTab(mode) {
-  historyMode = mode;
-  historyPage = 1;
-  const ranked = document.getElementById('historyRankedTab');
-  const unranked = document.getElementById('historyUnrankedTab');
-  if (ranked) ranked.classList.toggle('active', mode === 'ranked');
-  if (unranked) unranked.classList.toggle('active', mode === 'unranked');
-}
-
-async function refreshMatchHistory() {
-  const list = document.getElementById('historyList');
-  const pag = document.getElementById('historyPagination');
-  if (!list) return;
-
-  list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px;font-weight:700">Loading matches...</div>';
-  if (pag) pag.innerHTML = '';
-
-  try {
-    const data = await api(`/api/matches/${encodeURIComponent(lastSearchName)}?mode=${historyMode}&page=${historyPage}&limit=${matchesPerPage}`);
-    if (!data || !data.success) {
-      list.innerHTML = '<div style="color:var(--red);text-align:center;padding:40px;font-weight:800">Failed to load match history.</div>';
-      return;
-    }
-
-    const matches = data.matches || [];
-    if (matches.length === 0) {
-      list.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px;font-weight:800">No ${historyMode} matches found for this player.</div>`;
-      return;
-    }
-
-    list.innerHTML = matches.map(m => {
-      const isWinner = m.winner.toLowerCase() === lastSearchName.toLowerCase();
-      const date = new Date(m.time * 1000).toLocaleDateString();
-      const timeStr = new Date(m.time * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      return `
-        <div class="history-item ${isWinner ? 'win' : 'loss'}">
-          <div class="history-left">
-            <div class="history-status">${isWinner ? 'WIN' : 'LOSS'}</div>
-            <div class="history-info">
-              <div class="history-kit">${escapeHtml(m.kit)}</div>
-              <div class="history-date">${date} at ${timeStr}</div>
-            </div>
-          </div>
-          <div class="history-players">
-            <span class="player" onclick="renderProfile('${escapeHtml(m.loser)}'); showPage('profile');">${escapeHtml(m.loser)}</span>
-            <span class="vs">vs</span>
-            <span class="player" onclick="renderProfile('${escapeHtml(m.winner)}'); showPage('profile');">${escapeHtml(m.winner)}</span>
-          </div>
-          <div class="history-elo ${m.eloChange >= 0 ? 'plus' : 'minus'}">
-            ${m.eloChange >= 0 ? '+' : ''}${m.eloChange}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    if (pag) {
-      const hasMore = matches.length === matchesPerPage;
-      pag.innerHTML = `
-        <button class="btn btn-ghost" ${historyPage <= 1 ? 'disabled' : ''} id="prevPage">Previous</button>
-        <span style="font-weight:800; color:var(--muted)">Page ${historyPage}</span>
-        <button class="btn btn-ghost" ${!hasMore ? 'disabled' : ''} id="nextPage">Next</button>
-      `;
-
-      const prev = document.getElementById('prevPage');
-      const next = document.getElementById('nextPage');
-      if (prev) prev.onclick = () => { if(historyPage > 1) { historyPage--; refreshMatchHistory(); } };
-      if (next) next.onclick = () => { if(hasMore) { historyPage++; refreshMatchHistory(); } };
-    }
-
-  } catch (e) {
-    list.innerHTML = '<div style="color:var(--red);text-align:center;padding:40px;font-weight:800">Error loading match history.</div>';
-  }
-}
 
 if (playerSearch) {
   playerSearch.addEventListener('keypress', (e) => {
@@ -239,6 +107,12 @@ if (searchBtn) {
 
 function open(el){ el.setAttribute('aria-hidden','false'); }
 function close(el){ el.setAttribute('aria-hidden','true'); }
+
+function setHistoryTab(mode){
+  historyMode = mode;
+  if(historyRankedTab) historyRankedTab.classList.toggle('active', mode === 'ranked');
+  if(historyUnrankedTab) historyUnrankedTab.classList.toggle('active', mode === 'unranked');
+}
 
 function timeAgo(ts){
   if(!ts) return '';
@@ -355,6 +229,8 @@ async function refreshMatchHistory(){
 function showMatchHistory(name){
   lastSearchName = name;
   historyPage = 1;
+  if(historyHeader) historyHeader.textContent = `Viewing match history for ${name}`;
+  setHistoryTab(historyMode || 'ranked');
   showPage('history');
   refreshMatchHistory();
 }
@@ -782,12 +658,6 @@ function showMyMatchHistory() {
   }
 }
 
-function showMyStats() {
-  if (currentUser && currentUser.player) {
-    openPlayerStats(currentUser.player, 'NoDebuff');
-  }
-}
-
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -1088,29 +958,32 @@ async function renderProfile(name){
   container.innerHTML = '<div class="profile-loading">Loading profile for ' + escapeHtml(name) + '...</div>';
   header.innerText = 'Viewing profile of ' + name;
 
-  // New Tab Navigation logic
+  // new thingy logic stuff ye 
   const setupTabs = () => {
     const navStats = document.getElementById('profileNavStats');
     const navHistory = document.getElementById('profileNavHistory');
     const navPunishments = document.getElementById('profileNavPunishments');
     
     const contentStats = document.getElementById('profileStatsContent');
+    const contentHistory = document.getElementById('profileHistoryContent');
     const contentPunishments = document.getElementById('profilePunishmentsContent');
 
     if (navStats) navStats.onclick = () => {
       [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
       navStats.classList.add('active');
+      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
       if(contentStats) contentStats.style.display = 'block';
-      if(contentPunishments) contentPunishments.style.display = 'none';
     };
     if (navHistory) navHistory.onclick = () => {
-      // Simply go to the match history page for this player
-      showMatchHistory(name);
+      [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
+      navHistory.classList.add('active');
+      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
+      if(contentHistory) contentHistory.style.display = 'block';
     };
     if (navPunishments) navPunishments.onclick = () => {
       [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
       navPunishments.classList.add('active');
-      if(contentStats) contentStats.style.display = 'none';
+      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
       if(contentPunishments) contentPunishments.style.display = 'block';
       loadPunishments(name);
     };
@@ -1131,11 +1004,9 @@ async function renderProfile(name){
         <div class="profile-top">
           <div class="profile-head" id="profileHeadContainer"></div>
           <div class="profile-info">
-            <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
-              <div class="profile-name" style="color:${profile.rankColor || '#fff'}">${escapeHtml(profile.name)}</div>
-              <div id="profileBanStatus" style="font-weight:900; font-size:15px;"></div>
-            </div>
+            <div class="profile-name" style="color:${profile.rankColor || '#fff'}">${escapeHtml(profile.name)}</div>
             <div class="profile-rank">${escapeHtml(profile.rankName || 'Player')}</div>
+            <div id="profileBanStatus" style="font-weight:800; font-size:14px; margin-top:5px;"></div>
             <div class="profile-badges">
               ${profile.tag ? `<div class="profile-badge" style="background:rgba(239,68,68,0.1);color:#ef4444">${escapeHtml(profile.tag)}</div>` : ''}
               ${profile.division ? `<div class="profile-badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${escapeHtml(profile.division)}</div>` : ''}
@@ -1266,11 +1137,8 @@ async function loadPunishments(name, render = true) {
   if (render && listEl) listEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:18px;font-weight:700">Fetching punishments...</div>';
   
   try {
-    const data = await api('/api/punishments/' + encodeURIComponent(name), { timeoutMs: 15000 });
-    if (!data || !data.success) {
-      if (render && listEl) listEl.innerHTML = '<div style="color:var(--red);text-align:center;padding:18px;font-weight:800">Failed to load punishments.</div>';
-      return;
-    }
+    const data = await api('/api/punishments/' + encodeURIComponent(name));
+    if (!data || !data.success) return;
 
     currentProfilePunishments = data.punishments || [];
     currentProfileAlts = data.alts || [];
@@ -1278,10 +1146,10 @@ async function loadPunishments(name, render = true) {
     if (statusEl) {
       if (data.banned) {
         statusEl.style.color = '#ef4444';
-        statusEl.textContent = 'Player is currently banned.';
+        statusEl.textContent = 'This player is currently banned.';
       } else {
         statusEl.style.color = '#22c55e';
-        statusEl.textContent = 'Player is not currently banned.';
+        statusEl.textContent = 'This player is not currently banned.';
       }
     }
 
@@ -1351,18 +1219,12 @@ function openPunishmentDetail(id) {
 }
 
 const punishmentModalCloseBtn = document.getElementById('punishmentModalClose');
-const punishmentModalEl = document.getElementById('punishmentModal');
-if (punishmentModalCloseBtn && punishmentModalEl) {
-  punishmentModalCloseBtn.onclick = () => close(punishmentModalEl);
-  punishmentModalEl.addEventListener('click', (e) => { 
-    if(e.target === punishmentModalEl) close(punishmentModalEl); 
-  });
+if (punishmentModalCloseBtn) {
+  punishmentModalCloseBtn.onclick = () => close(document.getElementById('punishmentModal'));
 }
-
-function showMyStats() {
-  if (currentUser && currentUser.player) {
-    openPlayerStats(currentUser.player, 'NoDebuff');
-  }
+const punishmentModalEl = document.getElementById('punishmentModal');
+if (punishmentModalEl) {
+  punishmentModalEl.addEventListener('click', (e) => { if(e.target === punishmentModalEl) close(punishmentModalEl); });
 }
 
 function makeBodyCanvas(skinBase64) {
