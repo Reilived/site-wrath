@@ -6,7 +6,6 @@ if (closeCopyModal) {
   closeCopyModal.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("OK button clicked via listener");
     if (copyModal) close(copyModal);
   });
 }
@@ -65,8 +64,23 @@ const searchBtn = document.getElementById('searchBtn');
 const searchActionModal = document.getElementById('searchActionModal');
 const searchActionDesc = document.getElementById('searchActionDesc');
 const searchGoProfile = document.getElementById('searchGoProfile');
+const searchGoStats = document.getElementById('searchGoStats');
 const searchGoHistory = document.getElementById('searchGoHistory');
 const searchCancel = document.getElementById('searchCancel');
+
+const playerStatsModal = document.getElementById('playerStatsModal');
+const playerStatsTitle = document.getElementById('playerStatsTitle');
+const playerStatsDesc = document.getElementById('playerStatsDesc');
+const playerStatsLadder = document.getElementById('playerStatsLadder');
+const playerStatsBody = document.getElementById('playerStatsBody');
+const playerStatsClose = document.getElementById('playerStatsClose');
+
+const storeGrid = document.getElementById('storeGrid');
+const purchaseModal = document.getElementById('purchaseModal');
+const purchaseTitle = document.getElementById('purchaseTitle');
+const purchaseDesc = document.getElementById('purchaseDesc');
+const purchaseOk = document.getElementById('purchaseOk');
+const purchaseCancel = document.getElementById('purchaseCancel');
 
 const historyHeader = document.getElementById('historyHeader');
 const historyContent = document.getElementById('historyContent');
@@ -81,14 +95,12 @@ const matchesPerPage = 10;
 if (playerSearch) {
   playerSearch.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-      console.log("Enter pressed in search box");
       handleSearch();
     }
   });
 }
 if (searchBtn) {
   searchBtn.addEventListener('click', () => {
-    console.log("Search button clicked");
     handleSearch();
   });
 }
@@ -229,6 +241,162 @@ function openSearchAction(name){
   if(searchActionModal) open(searchActionModal);
 }
 
+function normalizeLadderName(input){
+  const s = String(input || '').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+  const map = {
+    ffa: 'FFA',
+    nodebuff: 'NoDebuff',
+    no: 'NoDebuff',
+    builduhc: 'BuildUHC',
+    boxing: 'Boxing',
+    bridge: 'Bridge',
+    hcteams: 'HCTeams',
+    hctranked: 'HCT Ranked',
+    hct: 'HCT Ranked',
+    midfight: 'Midfight',
+    sumo: 'Sumo',
+    combo: 'Combo',
+    skywars: 'Skywars',
+    soup: 'Soup',
+    knockback: 'Knockback',
+    resistance: 'Resistance',
+    sniper: 'Sniper',
+    fist: 'Fist',
+    bedfight: 'Bedfight',
+    topfight: 'TopFight',
+    spleef: 'Spleef',
+    sg: 'SG',
+    survivalgames: 'SG',
+    gset: 'Gset'
+  };
+  return map[s] || 'NoDebuff';
+}
+
+async function openPlayerStats(name, ladder){
+  const p = String(name || '').trim();
+  if(!p || !playerStatsModal) return;
+  const l = normalizeLadderName(ladder || 'NoDebuff');
+  lastSearchName = p;
+  if(playerStatsTitle) playerStatsTitle.textContent = `${p}'s Stats`;
+  if(playerStatsDesc) playerStatsDesc.textContent = `Stats for ${p} in ${l}`;
+  if(playerStatsLadder) playerStatsLadder.value = l;
+  open(playerStatsModal);
+  await loadPlayerStats(p, l);
+}
+
+async function loadPlayerStats(name, ladder){
+  if(!playerStatsBody) return;
+  playerStatsBody.innerHTML = '<div style="color:var(--muted);text-align:center;padding:18px;font-weight:700">Loading stats...</div>';
+  let skinBase64 = '';
+  let rankColor = '#ffffff';
+
+  try {
+    const [skinsRes, ranksRes] = await Promise.all([
+      api('/api/skins_batch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ players: [name] }) }),
+      api('/api/ranks_batch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ players: [name] }) })
+    ]);
+
+    if (skinsRes && skinsRes.success && skinsRes.skins) {
+      skinBase64 = skinsRes.skins[name] || skinsRes.skins[Object.keys(skinsRes.skins).find(k => k.toLowerCase() === name.toLowerCase())] || '';
+    }
+    if (ranksRes && ranksRes.success && ranksRes.ranks) {
+      const lowerName = name.toLowerCase();
+      const key = Object.keys(ranksRes.ranks).find(k => k.toLowerCase() === lowerName);
+      if (key && ranksRes.ranks[key]) {
+        rankColor = ranksRes.ranks[key].color || '#ffffff';
+      }
+    }
+  } catch (e) {}
+
+  try{
+    const l = normalizeLadderName(ladder);
+    const data = await api('/api/stats/' + encodeURIComponent(name) + '?ladder=' + encodeURIComponent(l), { timeoutMs: 20000 });
+    if(!data || !data.success){
+      playerStatsBody.innerHTML = '<div style="color:var(--red);text-align:center;padding:18px;font-weight:800">Failed to load stats.</div>';
+      return;
+    }
+
+    const elo = Number(data.elo ?? 1000);
+    const peak = Number(data.peak ?? 1000);
+    const wins = Number(data.wins ?? 0);
+    const losses = Number(data.losses ?? 0);
+    const winStreak = Number(data.winStreak ?? 0);
+    const bestWinStreak = Number(data.bestWinStreak ?? 0);
+    const dailyStreak = Number(data.dailyStreak ?? 0);
+    const bestDailyStreak = Number(data.bestDailyStreak ?? 0);
+
+    const commonTop = `
+      <div class="player-stats-top">
+        <div class="player-stats-head" id="playerStatsHeadTarget" style="width:72px; height:72px; display:flex; align-items:center; justify-content:center;"></div>
+        <div class="player-stats-toptext">
+          <div class="player-stats-sub"><span style="color:${rankColor}; font-weight:900;">${escapeHtml(name)}</span> in ${escapeHtml(normalizeLadderName(ladder))}</div>
+          <div class="player-stats-title">Current Stats</div>
+        </div>
+      </div>
+    `;
+
+    if (String(data.mode || '').toLowerCase() === 'ffa' || normalizeLadderName(ladder) === 'FFA') {
+      const kills = Number(data.kills ?? 0);
+      const deaths = Number(data.deaths ?? 0);
+      const streak = Number(data.streak ?? 0);
+      const bestStreak = Number(data.bestStreak ?? 0);
+
+      playerStatsBody.innerHTML = `
+        <div class="player-stats-card">
+          ${commonTop}
+          <div class="player-stats-grid">
+            <div class="player-stats-item"><span class="k">Elo</span><span class="v">${elo.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Kills</span><span class="v">${kills.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Deaths</span><span class="v">${deaths.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Streak</span><span class="v">${streak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Best Streak</span><span class="v">${bestStreak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Daily Streak</span><span class="v">${dailyStreak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Best Daily Streak</span><span class="v">${bestDailyStreak.toLocaleString()}</span></div>
+          </div>
+        </div>
+      `;
+    } else {
+      playerStatsBody.innerHTML = `
+        <div class="player-stats-card">
+          ${commonTop}
+          <div class="player-stats-grid">
+            <div class="player-stats-item"><span class="k">Elo</span><span class="v">${elo.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Peak</span><span class="v">${peak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Wins</span><span class="v">${wins.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Losses</span><span class="v">${losses.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Win Streak</span><span class="v">${winStreak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Best Win Streak</span><span class="v">${bestWinStreak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Daily Streak</span><span class="v">${dailyStreak.toLocaleString()}</span></div>
+            <div class="player-stats-item"><span class="k">Best Daily Streak</span><span class="v">${bestDailyStreak.toLocaleString()}</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    const target = document.getElementById('playerStatsHeadTarget');
+    if (target) {
+      if (skinBase64) {
+        const c = makeHeadCanvas(skinBase64);
+        c.style.width = '72px';
+        c.style.height = '72px';
+        c.style.borderRadius = '14px';
+        c.style.imageRendering = 'pixelated';
+        target.appendChild(c);
+      } else {
+        const img = document.createElement('img');
+        img.src = 'assets/skin.png';
+        img.style.width = '72px';
+        img.style.height = '72px';
+        img.style.imageRendering = 'pixelated';
+        img.style.borderRadius = '14px';
+        target.appendChild(img);
+      }
+    }
+  }catch(e){
+    playerStatsBody.innerHTML = '<div style="color:var(--red);text-align:center;padding:18px;font-weight:800">Failed to load stats.</div>';
+  }
+}
+
 if(searchCancel && searchActionModal){
   searchCancel.addEventListener('click', () => close(searchActionModal));
   searchActionModal.addEventListener('click', (e) => { if(e.target === searchActionModal) close(searchActionModal); });
@@ -244,6 +412,121 @@ if(searchGoHistory && searchActionModal){
   searchGoHistory.addEventListener('click', () => {
     close(searchActionModal);
     showMatchHistory(lastSearchName);
+  });
+}
+
+if(searchGoStats && searchActionModal){
+  searchGoStats.addEventListener('click', () => {
+    close(searchActionModal);
+    openPlayerStats(lastSearchName, 'NoDebuff');
+  });
+}
+
+if(playerStatsClose && playerStatsModal){
+  playerStatsClose.addEventListener('click', () => close(playerStatsModal));
+  playerStatsModal.addEventListener('click', (e) => { if(e.target === playerStatsModal) close(playerStatsModal); });
+}
+
+if(playerStatsLadder){
+  playerStatsLadder.addEventListener('change', () => {
+    if(playerStatsDesc) playerStatsDesc.textContent = `Stats for ${lastSearchName} in ${playerStatsLadder.value}`;
+    loadPlayerStats(lastSearchName, playerStatsLadder.value);
+  });
+}
+
+const STORE_DISCORD_URL = 'https://discord.com/invite/ZTZVF4v2kN';
+let storeTab = 'ranks';
+let pendingPurchase = null;
+
+const storeItems = {
+  ranks: [
+    { id: 'wrath_plus', name: 'Wrath Plus', price: '£9.99', img: 'assets/Wrath.png' }
+  ],
+  punishments: [
+    { id: 'unban_1', name: '1st Unban', price: '£11.99', img: 'assets/punishment.png' },
+    { id: 'unban_2', name: '2nd Unban', price: '£22.79', img: 'assets/punishment.png' },
+    { id: 'unban_3', name: '3rd Unban', price: '£34.79', img: 'assets/punishment.png' },
+    { id: 'unqueue_ban', name: 'Unqueue Ban', price: '£11.99', img: 'assets/punishment.png' },
+    { id: 'unmute', name: 'Unmute', price: '£8.39', img: 'assets/punishment.png' }
+  ],
+  cosmetics: [
+    { id: 'keys_3', name: '3x Mystery Keys', price: '£4.32', img: 'assets/cosmetic.png' },
+    { id: 'keys_6', name: '6x Mystery Keys', price: '£7.68', img: 'assets/cosmetic.png' }
+  ],
+  misc: [
+    { id: 'vpn_bypass', name: 'VPN Bypass', price: '£8.39', img: 'assets/misc.png' },
+    { id: 'account_transfer', name: 'Account Transfer', price: '£8.39', img: 'assets/misc.png' },
+    { id: 'global_reset', name: 'Global Stats Reset', price: '£5.99', img: 'assets/misc.png' }
+  ]
+};
+
+function renderStore(){
+  if(!storeGrid) return;
+  const items = storeItems[storeTab] || [];
+  if(items.length === 0){
+    storeGrid.innerHTML = '<div style="color:var(--muted);padding:24px;text-align:center;font-weight:800">No items available.</div>';
+    return;
+  }
+
+  storeGrid.innerHTML = items.map(it => {
+    const isWrath = String(it.img || '').toLowerCase().includes('wrath.png');
+    const img = it.img ? `<img src="${it.img}" alt="" class="store-img ${isWrath ? 'rank-wrath' : ''}" />` : '';
+    return `
+      <div class="store-card">
+        <div class="store-card-top">
+          ${img}
+        </div>
+        <div class="store-name">${escapeHtml(it.name)}</div>
+        <div class="store-price">${escapeHtml(it.price)}</div>
+        <div class="store-actions">
+          <button class="btn store-buy" data-id="${escapeHtml(it.id)}">Buy now</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  Array.from(storeGrid.querySelectorAll('.store-buy')).forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const it = items.find(x => x.id === id);
+      if(!it) return;
+      pendingPurchase = it;
+      if(purchaseTitle) purchaseTitle.textContent = it.name;
+      if(purchaseDesc) purchaseDesc.textContent = 'Join our Discord and create a ticket to purchase.';
+      if(purchaseModal) open(purchaseModal);
+    });
+  });
+}
+
+const storeTabs = Array.from(document.querySelectorAll('.store-tab'));
+if(storeTabs.length > 0){
+  storeTabs.forEach(t => {
+    t.addEventListener('click', () => {
+      storeTabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      storeTab = t.getAttribute('data-tab') || 'ranks';
+      renderStore();
+    });
+  });
+}
+
+if(purchaseCancel && purchaseModal){
+  purchaseCancel.addEventListener('click', () => close(purchaseModal));
+  purchaseModal.addEventListener('click', (e) => { if(e.target === purchaseModal) close(purchaseModal); });
+}
+
+if(purchaseOk){
+  purchaseOk.addEventListener('click', (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if(purchaseModal) close(purchaseModal);
+    try {
+      window.location.assign(STORE_DISCORD_URL);
+    } catch (err) {
+      try { window.open(STORE_DISCORD_URL, '_blank'); } catch (err2) {}
+    }
   });
 }
 if(historyRankedTab){
@@ -389,6 +672,7 @@ function showPage(name) {
   if(btn) btn.classList.add('active');
 
   if(name === 'leaderboard') refreshLeaderboards();
+  if(name === 'store') renderStore();
   if(name === 'staff') refreshStaffPage();
   if(name === 'status') {
     refreshStatusPage();
@@ -695,6 +979,9 @@ async function renderProfile(name){
               ${profile.tag ? `<div class="profile-badge" style="background:rgba(239,68,68,0.1);color:#ef4444">${escapeHtml(profile.tag)}</div>` : ''}
               ${profile.division ? `<div class="profile-badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${escapeHtml(profile.division)}</div>` : ''}
             </div>
+            <div class="row" style="margin-top:12px; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-ghost" id="profileStatsBtn" style="padding:10px 14px;">Stats</button>
+            </div>
           </div>
         </div>
 
@@ -752,6 +1039,17 @@ async function renderProfile(name){
         ` : ''}
       </div>
     `;
+
+    const profileStatsBtn = document.getElementById('profileStatsBtn');
+    if (profileStatsBtn) {
+      profileStatsBtn.addEventListener('click', () => openPlayerStats(profile.name, 'NoDebuff'));
+    }
+
+    const ladderEls = Array.from(container.querySelectorAll('.ladder-stat .name'));
+    ladderEls.forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => openPlayerStats(profile.name, el.textContent || 'NoDebuff'));
+    });
 
     const headTarget = document.getElementById('profileHeadContainer');
     if (headTarget) {
@@ -827,7 +1125,6 @@ function makeBodyCanvas(skinBase64) {
   ctx.drawImage(src, 4,36,4,12, 16,80,16,48);
 
   ctx.drawImage(src, 19,48,4,12, 32,80,16,48);
-  // EPSTEIN RAPER NIGGERS
   ctx.drawImage(src, 0,48,4,12, 32,80,16,48);
 
   return out;

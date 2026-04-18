@@ -217,6 +217,17 @@ app.post("/api/skins_batch", async (req, res) => {
   }
 });
 
+app.post("/api/ranks_batch", async (req, res) => {
+  try {
+    const players = (req.body && Array.isArray(req.body.players)) ? req.body.players : [];
+    const data = await bridgeRequest("ranks_batch", { players });
+    res.json(data);
+  } catch (err) {
+    console.error("[api/ranks_batch] Error:", err.message);
+    res.json({ success: false, ranks: {} });
+  }
+});
+
 app.post("/api/logout", (req, res) => {
   res.clearCookie("sid");
   res.json({ ok: true });
@@ -242,6 +253,17 @@ app.get("/api/profile/:name", async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error("[api/profile] Error:", err.message);
+    res.json({ success: false, error: "Bridge request failed" });
+  }
+});
+
+app.get("/api/stats/:name", async (req, res) => {
+  try {
+    const ladder = String(req.query.ladder || "NoDebuff");
+    const data = await bridgeRequest("player_stats", { player: req.params.name, ladder });
+    res.json(data);
+  } catch (err) {
+    console.error("[api/stats] Error:", err.message);
     res.json({ success: false, error: "Bridge request failed" });
   }
 });

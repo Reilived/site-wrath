@@ -18,6 +18,7 @@
 
     <nav class="nav">
       <button class="nav-item active" onclick="showPage('home')">Home</button>
+      <button class="nav-item" onclick="showPage('store')">Store</button>
       <button class="nav-item" onclick="showPage('leaderboard')">Leaderboard</button>
       <button class="nav-item" onclick="showPage('status')">Status</button>
       <button class="nav-item" onclick="showPage('staff')">Staff</button>
@@ -100,6 +101,9 @@
             </svg>
             <span>Join the discord for support.</span>
           </a>
+          <div style="margin-top:30px; display:flex; justify-content:center;">
+            <iframe src="https://discord.com/widget?id=1409033519539294252&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" style="border-radius:18px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></iframe>
+          </div>
         </div>
       </div>
     </div>
@@ -184,6 +188,24 @@
         <div class="history-loading">Loading match history...</div>
       </div>
     </div>
+
+    <div id="storePage" class="page">
+      <div class="hero" style="margin-bottom:30px">
+        <h1>Store</h1>
+        <p>Purchase ranks and items by opening a ticket in our Discord.</p>
+      </div>
+      <div class="store-layout">
+        <div class="store-sidebar">
+          <button class="store-tab active" data-tab="ranks">Ranks</button>
+          <button class="store-tab" data-tab="punishments">Punishments</button>
+          <button class="store-tab" data-tab="cosmetics">Cosmetics</button>
+          <button class="store-tab" data-tab="misc">Misc</button>
+        </div>
+        <div class="store-main">
+          <div class="store-grid" id="storeGrid"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <div class="modal" id="loginModal" aria-hidden="true">
@@ -216,7 +238,10 @@
       <div class="modal-desc" id="searchActionDesc">Choose what you want to view.</div>
       <div class="row" style="gap:10px; flex-wrap: wrap;">
         <button class="btn" id="searchGoProfile">Profile</button>
+        <button class="btn btn-ghost" id="searchGoStats">Stats</button>
         <button class="btn btn-ghost" id="searchGoHistory">Match History</button>
+      </div>
+      <div class="row" style="margin-top:14px; justify-content:flex-end">
         <button class="btn btn-ghost" id="searchCancel">Cancel</button>
       </div>
     </div>
@@ -228,6 +253,51 @@
       <h2 style="margin-bottom: 15px; font-size: 24px; font-weight: 900; color: #fff;">Success!</h2>
       <p style="color: var(--muted); margin-bottom: 30px; font-size: 16px; line-height: 1.5;">You have successfully copied the IP/Port to clipboard.</p>
       <button id="closeCopyModal" class="nav-item active" style="width: 100%; justify-content: center; padding: 14px; cursor: pointer; background: var(--primary); border: none; border-radius: 10px; color: #000; font-weight: 900; font-size: 16px; transition: transform 0.2s; display: flex; align-items: center; position: relative; z-index: 10001;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">OK</button>
+    </div>
+  </div>
+
+  <div class="modal" id="playerStatsModal" aria-hidden="true">
+    <div class="modal-inner" style="width:min(620px,calc(100% - 32px));">
+      <div class="modal-title" id="playerStatsTitle">Player Stats</div>
+      <div class="modal-desc" id="playerStatsDesc">Stats</div>
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+        <select id="playerStatsLadder" class="input" style="margin:0; letter-spacing:0; text-transform:none; text-align:left; font-size:14px; padding:12px 14px;">
+          <option value="FFA">FFA</option>
+          <option value="NoDebuff">NoDebuff</option>
+          <option value="BuildUHC">BuildUHC</option>
+          <option value="Boxing">Boxing</option>
+          <option value="Bridge">Bridge</option>
+          <option value="HCTeams">HCTeams</option>
+          <option value="HCT Ranked">HCT Ranked</option>
+          <option value="Midfight">Midfight</option>
+          <option value="Sumo">Sumo</option>
+          <option value="Combo">Combo</option>
+          <option value="Skywars">Skywars</option>
+          <option value="Soup">Soup</option>
+          <option value="Knockback">Knockback</option>
+          <option value="Resistance">Resistance</option>
+          <option value="Sniper">Sniper</option>
+          <option value="Fist">Fist</option>
+          <option value="Bedfight">Bedfight</option>
+          <option value="TopFight">TopFight</option>
+          <option value="Spleef">Spleef</option>
+          <option value="SG">SG</option>
+          <option value="Gset">Gset</option>
+        </select>
+        <button class="btn" id="playerStatsClose">Close</button>
+      </div>
+      <div id="playerStatsBody"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="purchaseModal" aria-hidden="true">
+    <div class="modal-inner" style="width:min(520px,calc(100% - 32px));">
+      <div class="modal-title" id="purchaseTitle">Purchase</div>
+      <div class="modal-desc" id="purchaseDesc">Join our Discord and create a ticket to purchase.</div>
+      <div class="row" style="gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="purchaseCancel">Cancel</button>
+        <button class="btn" id="purchaseOk">OK</button>
+      </div>
     </div>
   </div>
 
