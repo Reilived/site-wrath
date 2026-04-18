@@ -419,6 +419,12 @@ transform: translateY(0) scale(1);
 .store-actions{margin-top:auto;display:flex;gap:10px;}
 .store-actions .btn{width:100%;justify-content:center;}
 
+.profile-nav{display:flex;gap:10px;flex-wrap:wrap;}
+.profile-nav-item{border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);color:#fff;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;transition:all .15s ease;}
+.profile-nav-item:hover{background:rgba(255,255,255,0.06);transform:translateY(-1px);}
+.profile-nav-item.active{border-color:rgba(var(--primary-rgb),0.55);box-shadow:0 0 0 3px rgba(var(--primary-rgb),0.14) inset;background:rgba(var(--primary-rgb),0.10);}
+.profile-nav-item:disabled{opacity:.6;cursor:default;transform:none;}
+
 .punishments-list { display: flex; flex-direction: column; gap: 12px; }
 .punishment-item {
   display: flex;

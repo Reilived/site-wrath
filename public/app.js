@@ -529,16 +529,24 @@ if(purchaseOk){
     }
   });
 }
-if(historyRankedTab){
-  historyRankedTab.addEventListener('click', () => {
-    setHistoryTab('ranked');
-    refreshMatchHistory();
+const allHistoryRankedTabs = Array.from(document.querySelectorAll('[id="historyRankedTab"]'));
+const allHistoryUnrankedTabs = Array.from(document.querySelectorAll('[id="historyUnrankedTab"]'));
+if(allHistoryRankedTabs.length > 0){
+  allHistoryRankedTabs.forEach(t => {
+    t.addEventListener('click', (e) => {
+      if(e){ e.preventDefault(); e.stopPropagation(); }
+      setHistoryTab('ranked');
+      refreshMatchHistory();
+    });
   });
 }
-if(historyUnrankedTab){
-  historyUnrankedTab.addEventListener('click', () => {
-    setHistoryTab('unranked');
-    refreshMatchHistory();
+if(allHistoryUnrankedTabs.length > 0){
+  allHistoryUnrankedTabs.forEach(t => {
+    t.addEventListener('click', (e) => {
+      if(e){ e.preventDefault(); e.stopPropagation(); }
+      setHistoryTab('unranked');
+      refreshMatchHistory();
+    });
   });
 }
 
@@ -655,6 +663,12 @@ function showMyProfile() {
 function showMyMatchHistory() {
   if (currentUser && currentUser.player) {
     showMatchHistory(currentUser.player);
+  }
+}
+
+function showMyStats() {
+  if (currentUser && currentUser.player) {
+    openPlayerStats(currentUser.player, 'NoDebuff');
   }
 }
 
@@ -975,10 +989,7 @@ async function renderProfile(name){
       if(contentStats) contentStats.style.display = 'block';
     };
     if (navHistory) navHistory.onclick = () => {
-      [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
-      navHistory.classList.add('active');
-      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
-      if(contentHistory) contentHistory.style.display = 'block';
+      showMatchHistory(name);
     };
     if (navPunishments) navPunishments.onclick = () => {
       [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
@@ -1154,6 +1165,12 @@ async function loadPunishments(name, render = true) {
     }
 
     if (render) renderPunishments();
+
+    const cb = document.getElementById('punishmentsShowAlts');
+    if (cb && !cb._boundPunishments) {
+      cb._boundPunishments = true;
+      cb.addEventListener('change', () => renderPunishments());
+    }
   } catch (e) {}
 }
 
