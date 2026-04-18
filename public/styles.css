@@ -419,6 +419,37 @@ transform: translateY(0) scale(1);
 .store-actions{margin-top:auto;display:flex;gap:10px;}
 .store-actions .btn{width:100%;justify-content:center;}
 
+.punishments-list { display: flex; flex-direction: column; gap: 12px; }
+.punishment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.punishment-item:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); }
+.punishment-item.active-ban { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
+.punishment-item.active-mute { background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.3); }
+.punishment-item.expired { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); opacity: 0.8; }
+
+.punishment-left { display: flex; align-items: center; gap: 16px; }
+.punishment-icon { width: 32px; height: 32px; display: grid; place-items: center; color: #fff; opacity: 0.8; }
+.punishment-info { display: flex; flex-direction: column; }
+.punishment-type { font-weight: 1000; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.punishment-badge { font-size: 10px; padding: 2px 6px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.punishment-badge.active { background: #ef4444; color: #fff; }
+.punishment-badge.expired { background: #22c55e; color: #fff; }
+.punishment-date { font-size: 13px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+
+.punishment-detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.punishment-detail-row:last-child { border-bottom: none; }
+.punishment-detail-key { color: var(--muted); font-weight: 800; text-transform: uppercase; font-size: 12px; }
+.punishment-detail-val { color: #fff; font-weight: 900; font-size: 14px; text-align: right; }
+
 @media (max-width: 980px){
   .nav{position:static;transform:none;left:auto;gap:10px;flex-wrap:wrap;justify-content:center;}
   .topbar{flex-wrap:wrap;gap:12px;}

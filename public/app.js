@@ -958,6 +958,37 @@ async function renderProfile(name){
   container.innerHTML = '<div class="profile-loading">Loading profile for ' + escapeHtml(name) + '...</div>';
   header.innerText = 'Viewing profile of ' + name;
 
+  // new thingy logic stuff ye 
+  const setupTabs = () => {
+    const navStats = document.getElementById('profileNavStats');
+    const navHistory = document.getElementById('profileNavHistory');
+    const navPunishments = document.getElementById('profileNavPunishments');
+    
+    const contentStats = document.getElementById('profileStatsContent');
+    const contentHistory = document.getElementById('profileHistoryContent');
+    const contentPunishments = document.getElementById('profilePunishmentsContent');
+
+    if (navStats) navStats.onclick = () => {
+      [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
+      navStats.classList.add('active');
+      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
+      if(contentStats) contentStats.style.display = 'block';
+    };
+    if (navHistory) navHistory.onclick = () => {
+      [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
+      navHistory.classList.add('active');
+      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
+      if(contentHistory) contentHistory.style.display = 'block';
+    };
+    if (navPunishments) navPunishments.onclick = () => {
+      [navStats, navHistory, navPunishments].forEach(n => n?.classList.remove('active'));
+      navPunishments.classList.add('active');
+      [contentStats, contentHistory, contentPunishments].forEach(c => { if(c) c.style.display = 'none'; });
+      if(contentPunishments) contentPunishments.style.display = 'block';
+      loadPunishments(name);
+    };
+  };
+
     try {
       const data = await api('/api/profile/' + encodeURIComponent(name), { timeoutMs: 30000 });
       
@@ -975,81 +1006,102 @@ async function renderProfile(name){
           <div class="profile-info">
             <div class="profile-name" style="color:${profile.rankColor || '#fff'}">${escapeHtml(profile.name)}</div>
             <div class="profile-rank">${escapeHtml(profile.rankName || 'Player')}</div>
+            <div id="profileBanStatus" style="font-weight:800; font-size:14px; margin-top:5px;"></div>
             <div class="profile-badges">
               ${profile.tag ? `<div class="profile-badge" style="background:rgba(239,68,68,0.1);color:#ef4444">${escapeHtml(profile.tag)}</div>` : ''}
               ${profile.division ? `<div class="profile-badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${escapeHtml(profile.division)}</div>` : ''}
             </div>
-            <div class="row" style="margin-top:12px; gap:10px; flex-wrap:wrap;">
-              <button class="btn btn-ghost" id="profileStatsBtn" style="padding:10px 14px;">Stats</button>
+          </div>
+        </div>
+
+        <div class="profile-layout">
+          <div class="profile-sidebar">
+            <div class="profile-nav">
+              <button class="profile-nav-item active" id="profileNavStats">Statistics</button>
+              <button class="profile-nav-item" id="profileNavHistory">Match History</button>
+              <button class="profile-nav-item" id="profileNavPunishments">Punishments</button>
+            </div>
+          </div>
+          <div class="profile-main">
+            <div id="profileStatsContent">
+              <div class="profile-section-title">Global Statistics</div>
+              <div class="profile-stats-main">
+                <div class="stat-box">
+                  <span class="label">Average Elo</span>
+                  <span class="value">${Number(profile.elo).toLocaleString()}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">Total Wins</span>
+                  <span class="value">${Number(profile.wins ?? 0).toLocaleString()}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">Total Kills</span>
+                  <span class="value">${Number(profile.kills).toLocaleString()}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">Playtime</span>
+                  <span class="value">${profile.playtimeFormatted || profile.playtime || '0h'}</span>
+                </div>
+              </div>
+
+              <div class="profile-section-title">Competitive Ladders</div>
+              <div class="profile-ladders">
+                ${Object.entries(profile.ladders).map(([name, stats]) => `
+                  <div class="ladder-stat" onclick="openPlayerStats('${profile.name}', '${name}')" style="cursor:pointer">
+                    <span class="name">${escapeHtml(name)}</span>
+                    <span class="elo">${stats.elo}</span>
+                    <span class="record">${stats.wins !== undefined ? `${stats.wins}W/${stats.losses}L` : `${stats.kills}K/${stats.deaths}D`}</span>
+                  </div>
+                `).join('')}
+              </div>
+
+              ${profile.ffa ? `
+              <div class="profile-section-title">FFA Statistics</div>
+              <div class="profile-stats-main">
+                <div class="stat-box" onclick="openPlayerStats('${profile.name}', 'FFA')" style="cursor:pointer">
+                  <span class="label">FFA Elo</span>
+                  <span class="value">${Number(profile.ffa.elo).toLocaleString()}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">FFA Kills</span>
+                  <span class="value">${Number(profile.ffa.kills).toLocaleString()}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">FFA Deaths</span>
+                  <span class="value">${Number(profile.ffa.deaths).toLocaleString()}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="label">Best Streak</span>
+                  <span class="value">${Number(profile.ffa.streak).toLocaleString()}</span>
+                </div>
+              </div>
+              ` : ''}
+              <div style="margin-top:24px; display:flex; gap:12px;">
+                <button class="btn" onclick="openPlayerStats('${profile.name}', 'NoDebuff')">View Advanced Stats</button>
+              </div>
+            </div>
+
+            <div id="profileHistoryContent" style="display:none">
+              <div style="color:var(--muted); padding:20px; text-align:center; font-weight:800;">Use advanced search for history (coming soon here).</div>
+            </div>
+
+            <div id="profilePunishmentsContent" style="display:none">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="font-weight:900;">Recent Punishments</h3>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:14px; color:var(--muted);">
+                  <input type="checkbox" id="punishmentsShowAlts" style="width:18px; height:18px; cursor:pointer;">
+                  Show alt punishments
+                </label>
+              </div>
+              <div id="punishmentsList" class="punishments-list"></div>
             </div>
           </div>
         </div>
-
-        <div class="profile-section-title">Global Statistics</div>
-        <div class="profile-stats-main">
-          <div class="stat-box">
-            <span class="label">Average Elo</span>
-            <span class="value">${Number(profile.elo).toLocaleString()}</span>
-          </div>
-          <div class="stat-box">
-            <span class="label">Total Wins</span>
-            <span class="value">${Number(profile.wins ?? 0).toLocaleString()}</span>
-          </div>
-          <div class="stat-box">
-            <span class="label">Total Kills</span>
-            <span class="value">${Number(profile.kills).toLocaleString()}</span>
-          </div>
-          <div class="stat-box">
-            <span class="label">Playtime</span>
-            <span class="value">${profile.playtimeFormatted || profile.playtime || '0h'}</span>
-          </div>
-        </div>
-
-        <div class="profile-section-title">Competitive Ladders</div>
-        <div class="profile-ladders">
-          ${Object.entries(profile.ladders).map(([name, stats]) => `
-            <div class="ladder-stat">
-              <span class="name">${escapeHtml(name)}</span>
-              <span class="elo">${stats.elo}</span>
-              <span class="record">${stats.wins !== undefined ? `${stats.wins}W/${stats.losses}L` : `${stats.kills}K/${stats.deaths}D`}</span>
-            </div>
-          `).join('')}
-        </div>
-
-        ${profile.ffa ? `
-        <div class="profile-section-title">FFA Statistics</div>
-        <div class="profile-stats-main">
-          <div class="stat-box">
-            <span class="label">FFA Elo</span>
-            <span class="value">${Number(profile.ffa.elo).toLocaleString()}</span>
-          </div>
-          <div class="stat-box">
-            <span class="label">FFA Kills</span>
-            <span class="value">${Number(profile.ffa.kills).toLocaleString()}</span>
-          </div>
-          <div class="stat-box">
-            <span class="label">FFA Deaths</span>
-            <span class="value">${Number(profile.ffa.deaths).toLocaleString()}</span>
-          </div>
-          <div class="stat-box">
-            <span class="label">Best Streak</span>
-            <span class="value">${Number(profile.ffa.streak).toLocaleString()}</span>
-          </div>
-        </div>
-        ` : ''}
       </div>
     `;
 
-    const profileStatsBtn = document.getElementById('profileStatsBtn');
-    if (profileStatsBtn) {
-      profileStatsBtn.addEventListener('click', () => openPlayerStats(profile.name, 'NoDebuff'));
-    }
-
-    const ladderEls = Array.from(container.querySelectorAll('.ladder-stat .name'));
-    ladderEls.forEach(el => {
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', () => openPlayerStats(profile.name, el.textContent || 'NoDebuff'));
-    });
+    setupTabs();
+    loadPunishments(profile.name, false); // Load only for status first
 
     const headTarget = document.getElementById('profileHeadContainer');
     if (headTarget) {
@@ -1073,6 +1125,106 @@ async function renderProfile(name){
   } catch (e) {
     container.innerHTML = '<div class="profile-loading" style="color:#ef4444">Failed to load profile. Please try again later.</div>';
   }
+}
+
+let currentProfilePunishments = [];
+let currentProfileAlts = [];
+
+async function loadPunishments(name, render = true) {
+  const listEl = document.getElementById('punishmentsList');
+  const statusEl = document.getElementById('profileBanStatus');
+  
+  if (render && listEl) listEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:18px;font-weight:700">Fetching punishments...</div>';
+  
+  try {
+    const data = await api('/api/punishments/' + encodeURIComponent(name));
+    if (!data || !data.success) return;
+
+    currentProfilePunishments = data.punishments || [];
+    currentProfileAlts = data.alts || [];
+    
+    if (statusEl) {
+      if (data.banned) {
+        statusEl.style.color = '#ef4444';
+        statusEl.textContent = 'This player is currently banned.';
+      } else {
+        statusEl.style.color = '#22c55e';
+        statusEl.textContent = 'This player is not currently banned.';
+      }
+    }
+
+    if (render) renderPunishments();
+  } catch (e) {}
+}
+
+function renderPunishments() {
+  const listEl = document.getElementById('punishmentsList');
+  if (!listEl) return;
+  
+  const showAlts = document.getElementById('punishmentsShowAlts')?.checked;
+  let list = [...currentProfilePunishments];
+  
+  if (list.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px;font-weight:800">No punishments found.</div>';
+    return;
+  }
+
+  listEl.innerHTML = list.map(p => {
+    const isExpired = p.expires > 0 && p.expires < (Date.now() / 1000);
+    const isActive = p.active && !isExpired;
+    const badgeClass = isActive ? 'active' : 'expired';
+    const badgeText = isActive ? 'Active' : 'Expired';
+    const itemClass = isActive ? (p.type === 'Mute' ? 'active-mute' : 'active-ban') : 'expired';
+    
+    return `
+      <div class="punishment-item ${itemClass}" onclick="openPunishmentDetail('${p.id}')">
+        <div class="punishment-left">
+          <div class="punishment-icon">
+            ${p.type === 'Mute' ? '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46l4.92 4.92M20.46 8.46l-4.92 4.92"></path></svg>' : '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>'}
+          </div>
+          <div class="punishment-info">
+            <div class="punishment-type">${p.type} <span class="punishment-badge ${badgeClass}">${badgeText}</span></div>
+            <div class="punishment-date">${new Date(p.time * 1000).toLocaleString()}</div>
+          </div>
+        </div>
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      </div>
+    `;
+  }).join('');
+}
+
+function openPunishmentDetail(id) {
+  const p = currentProfilePunishments.find(x => x.id === id);
+  if (!p) return;
+  
+  const modal = document.getElementById('punishmentModal');
+  const body = document.getElementById('punishmentModalBody');
+  if (!modal || !body) return;
+  
+  const isExpired = p.expires > 0 && p.expires < (Date.now() / 1000);
+  const isActive = p.active && !isExpired;
+  
+  body.innerHTML = `
+    <div class="punishment-detail-row"><span class="punishment-detail-key">ID</span><span class="punishment-detail-val">${p.id}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Type</span><span class="punishment-detail-val">${p.type}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Reason</span><span class="punishment-detail-val">${escapeHtml(p.reason)}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Staff</span><span class="punishment-detail-val">${escapeHtml(p.staff)}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Issued At</span><span class="punishment-detail-val">${new Date(p.time * 1000).toLocaleString()}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Valid Until</span><span class="punishment-detail-val">${p.expires ? new Date(p.expires * 1000).toLocaleString() : 'Permanent'}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Active</span><span class="punishment-detail-val">${isActive ? 'Yes' : 'No'}</span></div>
+    <div class="punishment-detail-row"><span class="punishment-detail-key">Source</span><span class="punishment-detail-val">${p.source}</span></div>
+  `;
+  
+  open(modal);
+}
+
+const punishmentModalCloseBtn = document.getElementById('punishmentModalClose');
+if (punishmentModalCloseBtn) {
+  punishmentModalCloseBtn.onclick = () => close(document.getElementById('punishmentModal'));
+}
+const punishmentModalEl = document.getElementById('punishmentModal');
+if (punishmentModalEl) {
+  punishmentModalEl.addEventListener('click', (e) => { if(e.target === punishmentModalEl) close(punishmentModalEl); });
 }
 
 function makeBodyCanvas(skinBase64) {

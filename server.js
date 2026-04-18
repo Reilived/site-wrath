@@ -259,12 +259,24 @@ app.get("/api/profile/:name", async (req, res) => {
 
 app.get("/api/stats/:name", async (req, res) => {
   try {
-    const ladder = String(req.query.ladder || "NoDebuff");
-    const data = await bridgeRequest("player_stats", { player: req.params.name, ladder });
+    const name = req.params.name;
+    const ladder = req.query.ladder || "NoDebuff";
+    const data = await bridgeRequest("player_stats", { player: name, ladder }, 20000);
     res.json(data);
   } catch (err) {
     console.error("[api/stats] Error:", err.message);
-    res.json({ success: false, error: "Bridge request failed" });
+    res.json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/punishments/:name", async (req, res) => {
+  try {
+    const name = req.params.name;
+    const data = await bridgeRequest("player_punishments", { player: name }, 20000);
+    res.json(data);
+  } catch (err) {
+    console.error("[api/punishments] Error:", err.message);
+    res.json({ success: false, error: err.message });
   }
 });
 

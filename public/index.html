@@ -168,8 +168,49 @@
         <p id="profileHeader">Viewing profile</p>
       </div>
       <div id="profileContent" class="profile-container">
-        <!-- Profile details injected here -->
-        <div class="profile-loading">Loading profile...</div>
+        <div class="profile-head">
+          <div class="profile-head-text">
+            <div class="profile-rank" id="profileRank">Rank</div>
+            <h1 id="profileName">Username</h1>
+            <div id="profileBanStatus" style="font-weight:800; font-size:14px; margin-top:5px;"></div>
+          </div>
+        </div>
+        <div class="profile-layout">
+          <div class="profile-sidebar">
+            <div class="profile-nav">
+              <button class="profile-nav-item active" id="profileNavStats">Statistics</button>
+              <button class="profile-nav-item" id="profileNavHistory">Match History</button>
+              <button class="profile-nav-item" id="profileNavPunishments">Punishments</button>
+            </div>
+          </div>
+          <div class="profile-main">
+            <div id="profileStatsContent">
+              <div class="profile-stats-grid" id="profileStats"></div>
+              <div style="margin-top:24px; display:flex; gap:12px;">
+                <button class="btn" id="profileGoStats">View Advanced Stats</button>
+                <button class="btn btn-secondary" id="profileGoHistory">View Match History</button>
+              </div>
+            </div>
+            <div id="profileHistoryContent" style="display:none">
+              <div class="history-tabs">
+                <button class="history-tab active" id="historyRankedTab">Ranked</button>
+                <button class="history-tab" id="historyUnrankedTab">Unranked</button>
+              </div>
+              <div id="historyList" class="history-list"></div>
+              <div class="history-pagination" id="historyPagination"></div>
+            </div>
+            <div id="profilePunishmentsContent" style="display:none">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="font-weight:900;">Recent Punishments</h3>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:14px; color:var(--muted);">
+                  <input type="checkbox" id="punishmentsShowAlts" style="width:18px; height:18px; cursor:pointer;">
+                  Show alt punishments
+                </label>
+              </div>
+              <div id="punishmentsList" class="punishments-list"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -297,6 +338,17 @@
       <div class="row" style="gap:10px; justify-content:flex-end; flex-wrap:wrap;">
         <button class="btn btn-ghost" id="purchaseCancel">Cancel</button>
         <button class="btn" id="purchaseOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="punishmentModal" aria-hidden="true">
+    <div class="modal-inner">
+      <div class="modal-title" id="punishmentModalTitle">Punishment Details</div>
+      <div class="modal-desc" id="punishmentModalDesc">Full history and context.</div>
+      <div id="punishmentModalBody"></div>
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn" id="punishmentModalClose" style="width:100%">Close</button>
       </div>
     </div>
   </div>
