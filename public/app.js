@@ -61,10 +61,12 @@ function renderChatLine(line){
 
   // Auto-hide placeholder when logged in
   const input = document.getElementById('chatInput');
-  if (input && ACCOUNT && ACCOUNT.success) {
-    input.placeholder = "Start chatting...";
-  } else if (input) {
-    input.placeholder = "Link your account in-game with /sitelink to chat from the site";
+  if (input) {
+    if (window.ACCOUNT && window.ACCOUNT.success) {
+      input.placeholder = "Start chatting...";
+    } else {
+      input.placeholder = "Link your account in-game with /sitelink to chat from the site";
+    }
   }
 
   // Handle Minecraft color codes in broadcasts/chat messages for the site

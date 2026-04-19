@@ -172,11 +172,14 @@ async function requireAuth(req, res, next) {
   if (!xuid) return res.status(401).json({ ok: false });
   try {
     const out = await bridgeRequest("account_get", { xuid });
-    if (!out.success) return res.status(401).json({ ok: false });
+    if (!out.success) {
+      res.clearCookie("sid");
+      return res.status(401).json({ ok: false });
+    }
 
     // ranked info yhk 
     const bridgeRes = await bridgeRequest("ranks_batch", { players: [out.player] });
-    const rankInfo = bridgeRes.success ? bridgeRes.ranks[out.player] : { name: "Player", color: "#ffffff" };
+    const rankInfo = (bridgeRes.success && bridgeRes.ranks) ? bridgeRes.ranks[out.player] : { name: "Player", color: "#ffffff" };
 
     req.user = {
       ...out,
@@ -185,6 +188,7 @@ async function requireAuth(req, res, next) {
     };
     next();
   } catch (err) {
+    res.clearCookie("sid");
     res.status(500).json({ ok: false });
   }
 }
