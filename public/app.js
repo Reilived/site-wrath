@@ -37,7 +37,7 @@ function pushChatNotice(text){
   const nearBottom = (feed.scrollTop + feed.clientHeight) >= (feed.scrollHeight - 120);
   const ts = Math.floor(Date.now()/1000);
   const html = `
-    <div class="chat-line">
+    <div class="chat-line local-notice">
       <div class="chat-meta">
         <span class="chat-badge">INFO</span>
         <span>${escapeHtml2(formatTime(ts))}</span>
@@ -235,7 +235,7 @@ function initChatPage(){
 
   // reset only first time per session
   if(chatAfterId === 0){
-    feed.innerHTML = '<div style="color:var(--muted);padding:14px;font-weight:800">Loading chat...</div>';
+    feed.innerHTML = '<div style="color:var(--muted);padding:14px;font-weight:800">In-Game Chat.</div>';
   }
 
   const btn = document.getElementById('chatSendBtn');
