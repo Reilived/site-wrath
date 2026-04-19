@@ -1,12 +1,22 @@
 const copyIpBtn = document.getElementById('copyIpBtn');
 const copyModal = document.getElementById('copyModal');
 const closeCopyModal = document.getElementById('closeCopyModal');
+const chatLoginModal = document.getElementById('chatLoginModal');
+const chatLoginOk = document.getElementById('chatLoginOk');
 
 if (closeCopyModal) {
   closeCopyModal.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (copyModal) close(copyModal);
+  });
+}
+
+if (chatLoginOk && chatLoginModal) {
+  chatLoginOk.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    close(chatLoginModal);
   });
 }
 
@@ -161,10 +171,18 @@ function updateChatSendUi(){
   if(!btn || !input) return;
 
   // Update placeholder based on login status
-  if (window.currentUser && window.currentUser.player) {
+  if (currentUser && currentUser.player) {
     input.placeholder = "Start chatting...";
   } else {
     input.placeholder = "Link your account in-game with /sitelink to chat from the site";
+  }
+
+  // Allow clicking send while logged out (so we can show the login popup)
+  if (!(currentUser && currentUser.player)) {
+    btn.disabled = false;
+    btn.textContent = 'Send';
+    input.disabled = false;
+    return;
   }
 
   if(chatSendMuted){
@@ -193,8 +211,9 @@ async function sendChatFromSite(){
   if(!input || !btn) return;
 
   // Check login first
-  if (!window.currentUser || !window.currentUser.player) {
-    alert("You must login to type in chat from the site please run /sitelink in game then click on the log in button on site fill in the code and now you can type in chat!");
+  if (!currentUser || !currentUser.player) {
+    const m = document.getElementById('chatLoginModal');
+    if(m) open(m);
     return;
   }
 
@@ -225,6 +244,13 @@ async function sendChatFromSite(){
         pushChatNotice(`Please wait ${Math.max(0, remaining).toFixed(1)} seconds to type in chat again!`);
         updateChatSendUi();
         setTimeout(updateChatSendUi, Math.ceil(remaining*1000) + 50);
+      } else if(res && res.error === 'banned'){
+        chatSendMuted = true;
+        const reason = String(res.reason || 'Banned');
+        const expires = res.expires;
+        const expStr = expires ? new Date(Number(expires)*1000).toLocaleString() : 'Forever';
+        pushChatNotice(`You are banned. Reason: ${reason}. Expires: ${expStr}`);
+        updateChatSendUi();
       } else if(res && res.error === 'muted'){
         chatSendMuted = true;
         const expires = Number(res.expires || 0) || 0;
