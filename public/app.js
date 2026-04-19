@@ -59,16 +59,6 @@ function renderChatLine(line){
   const player = escapeHtml2(line.player || '');
   let msg = escapeHtml2(line.message || '');
 
-  // Auto-hide placeholder when logged in
-  const input = document.getElementById('chatInput');
-  if (input) {
-    if (window.currentUser && window.currentUser.player) {
-      input.placeholder = "Start chatting...";
-    } else {
-      input.placeholder = "Link your account in-game with /sitelink to chat from the site";
-    }
-  }
-
   // Handle Minecraft color codes in broadcasts/chat messages for the site
   if (isBroadcast || msg.includes('§')) {
     const mcColorMap = {
@@ -170,6 +160,13 @@ function updateChatSendUi(){
   const input = document.getElementById('chatInput');
   if(!btn || !input) return;
 
+  // Update placeholder based on login status
+  if (window.currentUser && window.currentUser.player) {
+    input.placeholder = "Start chatting...";
+  } else {
+    input.placeholder = "Link your account in-game with /sitelink to chat from the site";
+  }
+
   if(chatSendMuted){
     btn.disabled = true;
     input.disabled = true;
@@ -194,6 +191,13 @@ async function sendChatFromSite(){
   const input = document.getElementById('chatInput');
   const btn = document.getElementById('chatSendBtn');
   if(!input || !btn) return;
+
+  // Check login first
+  if (!window.currentUser || !window.currentUser.player) {
+    alert("You must login to type in chat from the site please run /sitelink in game then click on the log in button on site fill in the code and now you can type in chat!");
+    return;
+  }
+
   const msg = String(input.value || '').trim();
   if(!msg) return;
   if(chatSendMuted){
