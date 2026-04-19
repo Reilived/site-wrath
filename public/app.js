@@ -59,6 +59,14 @@ function renderChatLine(line){
   const player = escapeHtml2(line.player || '');
   let msg = escapeHtml2(line.message || '');
 
+  // Auto-hide placeholder when logged in
+  const input = document.getElementById('chatInput');
+  if (input && ACCOUNT && ACCOUNT.success) {
+    input.placeholder = "Start chatting...";
+  } else if (input) {
+    input.placeholder = "Link your account in-game with /sitelink to chat from the site";
+  }
+
   // Handle Minecraft color codes in broadcasts/chat messages for the site
   if (isBroadcast || msg.includes('§')) {
     const mcColorMap = {
@@ -108,7 +116,7 @@ function renderChatLine(line){
   const clan = String(line.clan || '').trim();
   const extras = [];
   if(division) extras.push(`<span style="font-weight:900;color:#fff;opacity:0.9">${escapeHtml2(division)}</span>`);
-  if(clan) extras.push(`<span style="opacity:0.75">${escapeHtml2(clan)}</span>`);
+  if(clan) extras.push(`<span style="opacity:0.75;color:${line.clanColor || '#ffffff'}">${escapeHtml2(clan)}</span>`);
   if(tag) extras.push(`<span style="opacity:0.75">${escapeHtml2(tag)}</span>`);
 
   return `
