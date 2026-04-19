@@ -62,7 +62,7 @@ function renderChatLine(line){
   // Auto-hide placeholder when logged in
   const input = document.getElementById('chatInput');
   if (input) {
-    if (window.ACCOUNT && window.ACCOUNT.success) {
+    if (window.currentUser && window.currentUser.player) {
       input.placeholder = "Start chatting...";
     } else {
       input.placeholder = "Link your account in-game with /sitelink to chat from the site";
@@ -144,6 +144,12 @@ async function pollChatOnce(){
       return;
     }
     const lines = Array.isArray(data.lines) ? data.lines : [];
+    
+    // Clear feed if afterId is 0 (initial load) and we got lines
+    if (chatAfterId === 0 && lines.length > 0) {
+      feed.innerHTML = '';
+    }
+
     if(lines.length === 0) return;
 
     const nearBottom = (feed.scrollTop + feed.clientHeight) >= (feed.scrollHeight - 120);
