@@ -346,6 +346,32 @@ app.get("/api/staff", async (req, res) => {
   }
 });
 
+app.get("/api/chat/recent", async (req, res) => {
+  try {
+    const afterId = Number(req.query.after_id || 0) || 0;
+    const limit = Math.max(1, Math.min(200, Number(req.query.limit || 50) || 50));
+    const data = await bridgeRequest("chat_recent", { after_id: afterId, limit });
+    res.json(data);
+  } catch (err) {
+    console.error("[api/chat/recent] Error:", err.message);
+    res.json({ success: false, lines: [] });
+  }
+});
+
+app.post("/api/chat/send", requireAuth, async (req, res) => {
+  try {
+    const msg = String((req.body && req.body.message) || "").trim();
+    if (!msg) return res.json({ success: false, error: "empty_message" });
+    
+    const xuid = req.user && req.user.xuid;
+    const data = await bridgeRequest("site_chat_send", { xuid, message: msg });
+    res.json(data);
+  } catch (err) {
+    console.error("[api/chat/send] Error:", err.message);
+    res.json({ success: false, error: "bridge_failed" });
+  }
+});
+
 app.get("/api/status", async (req, res) => {
   try {
     const [bridgeData, hubData] = await Promise.all([
@@ -382,6 +408,31 @@ app.get("/api/status", async (req, res) => {
     });
   } catch (err) {
     res.json({ timestamp: nowSec(), tps: 0, load: 0, online: 0, max: 0, hub: 0, practice: 0, players: [], error: true });
+  }
+});
+
+app.get("/api/chat/recent", async (req, res) => {
+  try {
+    const afterId = Number(req.query.after_id || 0) || 0;
+    const limit = Math.max(1, Math.min(200, Number(req.query.limit || 50) || 50));
+    const data = await bridgeRequest("chat_recent", { after_id: afterId, limit });
+    res.json(data);
+  } catch (err) {
+    console.error("[api/chat/recent] Error:", err.message);
+    res.json({ success: false, lines: [] });
+  }
+});
+
+app.post("/api/chat/send", requireAuth, async (req, res) => {
+  try {
+    const msg = String((req.body && req.body.message) || "").trim();
+    if (!msg) return res.json({ success: false, error: "empty_message" });
+    const xuid = req.user && req.user.xuid;
+    const data = await bridgeRequest("site_chat_send", { xuid, message: msg });
+    res.json(data);
+  } catch (err) {
+    console.error("[api/chat/send] Error:", err.message);
+    res.json({ success: false, error: "bridge_failed" });
   }
 });
 

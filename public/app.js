@@ -10,6 +10,246 @@ if (closeCopyModal) {
   });
 }
 
+// ---------------------------
+// Chat Page
+// ---------------------------
+let chatAfterId = 0;
+let chatPollTimer = null;
+let chatSendCooldownUntil = 0;
+let chatSendMuted = false;
+
+function formatTime(ts){
+  try{
+    const d = new Date(ts * 1000);
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }catch(e){
+    return '';
+  }
+}
+
+function escapeHtml2(s){
+  return escapeHtml(String(s ?? ''));
+}
+
+function pushChatNotice(text){
+  const feed = document.getElementById('chatFeed');
+  if(!feed) return;
+  const nearBottom = (feed.scrollTop + feed.clientHeight) >= (feed.scrollHeight - 120);
+  const ts = Math.floor(Date.now()/1000);
+  const html = `
+    <div class="chat-line">
+      <div class="chat-meta">
+        <span class="chat-badge">INFO</span>
+        <span>${escapeHtml2(formatTime(ts))}</span>
+        <span class="chat-name" style="opacity:0.7">Site</span>
+      </div>
+      <div class="chat-text">${escapeHtml2(text)}</div>
+    </div>
+  `;
+  feed.insertAdjacentHTML('beforeend', html);
+  if(nearBottom) feed.scrollTop = feed.scrollHeight;
+}
+
+function renderChatLine(line){
+  const type = String(line.type || 'chat');
+  const isBroadcast = type === 'broadcast';
+  const badge = isBroadcast ? '<span class="chat-badge">BROADCAST</span>' : (type === 'site' ? '<span class="chat-badge">SITE!</span>' : '');
+
+  const rankColor = line.rankColor || '#ffffff';
+  const player = escapeHtml2(line.player || '');
+  let msg = escapeHtml2(line.message || '');
+
+  // Handle Minecraft color codes in broadcasts/chat messages for the site
+  if (isBroadcast || msg.includes('§')) {
+    const mcColorMap = {
+      '0': '#000000', '1': '#0000aa', '2': '#00aa00', '3': '#00aaaa',
+      '4': '#aa0000', '5': '#aa00aa', '6': '#ffaa00', '7': '#aaaaaa',
+      '8': '#555555', '9': '#5555ff', 'a': '#55ff55', 'b': '#55ffff',
+      'c': '#ff5555', 'd': '#ff55ff', 'e': '#ffff55', 'f': '#ffffff'
+    };
+    
+    // Simple parser for § codes
+    let newMsg = '';
+    let currentColor = null;
+    let isBold = false;
+    
+    const parts = msg.split('§');
+    newMsg += parts[0];
+    
+    for (let i = 1; i < parts.length; i++) {
+      const p = parts[i];
+      if (p.length === 0) continue;
+      const code = p[0].toLowerCase();
+      const content = p.substring(1);
+      
+      if (mcColorMap[code]) {
+        if (currentColor || isBold) newMsg += '</span>';
+        currentColor = mcColorMap[code];
+        newMsg += `<span style="color:${currentColor}${isBold ? ';font-weight:900' : ''}">`;
+      } else if (code === 'l') {
+        if (!isBold) {
+           if (currentColor) newMsg += '</span>';
+           isBold = true;
+           newMsg += `<span style="font-weight:900${currentColor ? ';color:' + currentColor : ''}">`;
+        }
+      } else if (code === 'r') {
+        if (currentColor || isBold) newMsg += '</span>';
+        currentColor = null;
+        isBold = false;
+      }
+      newMsg += content;
+    }
+    if (currentColor || isBold) newMsg += '</span>';
+    msg = newMsg;
+  }
+
+  const division = String(line.division || '').trim();
+  const tag = String(line.tag || '').trim();
+  const clan = String(line.clan || '').trim();
+  const extras = [];
+  if(division) extras.push(`<span style="font-weight:900;color:#fff;opacity:0.9">${escapeHtml2(division)}</span>`);
+  if(clan) extras.push(`<span style="opacity:0.75">${escapeHtml2(clan)}</span>`);
+  if(tag) extras.push(`<span style="opacity:0.75">${escapeHtml2(tag)}</span>`);
+
+  return `
+    <div class="chat-line" data-id="${Number(line.id||0)}">
+      <div class="chat-meta">
+        ${badge}
+        <span>${escapeHtml2(formatTime(Number(line.ts||0)))}</span>
+        ${player ? `<span class="chat-name" style="color:${rankColor}">${player}</span>` : '<span class="chat-name" style="opacity:0.7">Server</span>'}
+        ${extras.length ? `<span style="opacity:0.35">•</span> ${extras.join('<span style="opacity:0.35">•</span>')}` : ''}
+      </div>
+      <div class="chat-text">${msg}</div>
+    </div>
+  `;
+}
+
+async function pollChatOnce(){
+  const feed = document.getElementById('chatFeed');
+  if(!feed) return;
+
+  try{
+    const data = await api('/api/chat/recent?after_id=' + encodeURIComponent(chatAfterId) + '&limit=60', { timeoutMs: 20000 });
+    if(!data || data.success === false){
+      return;
+    }
+    const lines = Array.isArray(data.lines) ? data.lines : [];
+    if(lines.length === 0) return;
+
+    const nearBottom = (feed.scrollTop + feed.clientHeight) >= (feed.scrollHeight - 120);
+
+    lines.forEach(l => {
+      chatAfterId = Math.max(chatAfterId, Number(l.id||0));
+      feed.insertAdjacentHTML('beforeend', renderChatLine(l));
+    });
+
+    if(nearBottom){
+      feed.scrollTop = feed.scrollHeight;
+    }
+  }catch(e){}
+}
+
+function updateChatSendUi(){
+  const btn = document.getElementById('chatSendBtn');
+  const input = document.getElementById('chatInput');
+  if(!btn || !input) return;
+
+  if(chatSendMuted){
+    btn.disabled = true;
+    input.disabled = true;
+    btn.textContent = 'Muted';
+    return;
+  } else {
+    input.disabled = false;
+  }
+
+  const now = Date.now();
+  const cdMs = Math.max(0, chatSendCooldownUntil - now);
+  if(cdMs > 0){
+    btn.disabled = true;
+    btn.textContent = 'Wait ' + (cdMs/1000).toFixed(1) + 's';
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Send';
+  }
+}
+
+async function sendChatFromSite(){
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('chatSendBtn');
+  if(!input || !btn) return;
+  const msg = String(input.value || '').trim();
+  if(!msg) return;
+  if(chatSendMuted){
+    pushChatNotice('You are muted and cannot chat from the site.');
+    return;
+  }
+
+  if(Date.now() < chatSendCooldownUntil){
+    const remaining = Math.max(0, (chatSendCooldownUntil - Date.now())/1000);
+    pushChatNotice(`Please wait ${remaining.toFixed(1)} seconds to type in chat again!`);
+    return;
+  }
+
+  try{
+    const res = await api('/api/chat/send', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: msg }), timeoutMs: 15000 });
+    if(res && res.success){
+      input.value = '';
+      chatSendCooldownUntil = Date.now() + 3000;
+      updateChatSendUi();
+      setTimeout(updateChatSendUi, 3100);
+    } else {
+      if(res && res.error === 'cooldown'){
+        const remaining = Number(res.remaining || 3) || 3;
+        chatSendCooldownUntil = Date.now() + Math.max(0, remaining*1000);
+        pushChatNotice(`Please wait ${Math.max(0, remaining).toFixed(1)} seconds to type in chat again!`);
+        updateChatSendUi();
+        setTimeout(updateChatSendUi, Math.ceil(remaining*1000) + 50);
+      } else if(res && res.error === 'muted'){
+        chatSendMuted = true;
+        const expires = Number(res.expires || 0) || 0;
+        const reason = String(res.reason || 'Unknown');
+        const expStr = expires > 0 ? new Date(expires*1000).toLocaleString() : 'Forever';
+        pushChatNotice(`You are muted. Reason: ${reason}. Expires: ${expStr}`);
+        updateChatSendUi();
+      } else if(res && res.error === 'not_linked'){
+        alert('Link your account in-game with /sitelink first.');
+      }
+    }
+  } catch(e){}
+}
+
+function initChatPage(){
+  const feed = document.getElementById('chatFeed');
+  if(!feed) return;
+
+  // reset only first time per session
+  if(chatAfterId === 0){
+    feed.innerHTML = '<div style="color:var(--muted);padding:14px;font-weight:800">Loading chat...</div>';
+  }
+
+  const btn = document.getElementById('chatSendBtn');
+  const input = document.getElementById('chatInput');
+  if(btn && !btn._chatBound){
+    btn._chatBound = true;
+    btn.addEventListener('click', sendChatFromSite);
+  }
+  if(input && !input._chatBound){
+    input._chatBound = true;
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') sendChatFromSite();
+    });
+  }
+
+  updateChatSendUi();
+  if(chatPollTimer) clearInterval(chatPollTimer);
+  pollChatOnce();
+  chatPollTimer = setInterval(() => {
+    pollChatOnce();
+    updateChatSendUi();
+  }, 1200);
+}
+
     if (copyIpBtn) {
       copyIpBtn.addEventListener('click', () => {
         const text = "Wrathpvp.pro:19132";
@@ -688,6 +928,9 @@ function showPage(name) {
   if(name === 'leaderboard') refreshLeaderboards();
   if(name === 'store') renderStore();
   if(name === 'staff') refreshStaffPage();
+  if(name === 'chat') {
+    initChatPage();
+  }
   if(name === 'status') {
     refreshStatusPage();
     if(window.statusInterval) clearInterval(window.statusInterval);

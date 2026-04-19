@@ -20,6 +20,7 @@
       <button class="nav-item active" onclick="showPage('home')">Home</button>
       <button class="nav-item" onclick="showPage('store')">Store</button>
       <button class="nav-item" onclick="showPage('leaderboard')">Leaderboard</button>
+      <button class="nav-item" onclick="showPage('chat')">Chat</button>
       <button class="nav-item" onclick="showPage('status')">Status</button>
       <button class="nav-item" onclick="showPage('staff')">Staff</button>
       <button class="nav-item" onclick="showPage('support')">Support</button>
@@ -77,6 +78,21 @@
       </div>
       <div class="leaderboard-grid" id="lbGrid">
         <!-- Leaderboards injected here -->
+      </div>
+    </div>
+
+    <div id="chatPage" class="page">
+      <div class="hero" style="margin-bottom:18px">
+        <h1>Chat</h1>
+        <p>Live in-game chat and broadcasts.</p>
+      </div>
+
+      <div class="chat-shell">
+        <div id="chatFeed" class="chat-feed"></div>
+        <div class="chat-inputbar">
+          <input id="chatInput" type="text" placeholder="Link your account in-game with /sitelink to chat from the site" maxlength="120" />
+          <button id="chatSendBtn" class="chat-send">Send</button>
+        </div>
       </div>
     </div>
 
